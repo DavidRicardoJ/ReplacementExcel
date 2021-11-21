@@ -1,0 +1,85 @@
+﻿@inject HttpClient httpClient
+@using System.Net.Http.Json
+
+<MudTable Items="@Elements" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" Filter="new Func<ReposicaoEstoque,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Medicamentos</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Código</MudTh>
+        <MudTh>Medicamento</MudTh>
+        <MudTh>Unidade</MudTh>
+        <MudTh>Último Movimento</MudTh>
+        <MudTh>Consumo Total</MudTh>
+        <MudTh>Estoque Atual</MudTh>
+        <MudTh>Dias de Consumo</MudTh>
+        <MudTh>Reposição</MudTh>
+
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
+        <MudTd DataLabel="Medicamento">@context.Medicamento</MudTd>
+        <MudTd DataLabel="Unidade">@context.Unidade</MudTd>
+        <MudTd DataLabel="UltimoMovimento">@context.UltimoMovimento.ToShortDateString()</MudTd>
+        <MudTd DataLabel="ConsumoTotal">@context.ConsumoTotal</MudTd>
+         <MudTd DataLabel="EstoqueAtual">@context.EstoqueAtual</MudTd>
+        <MudTd DataLabel="DiasDeEstoque">@context.DiasDeEstoque</MudTd>
+       
+
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+<div class="d-flex flex-wrap mt-4">
+    <MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
+    <MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
+    <MudSwitch @bind-Checked="@striped" Color="Color.Tertiary">Striped</MudSwitch>
+    <MudSwitch @bind-Checked="@bordered" Color="Color.Warning">Bordered</MudSwitch>
+    <MudSpacer />
+    <div style="min-width:200px;">
+        <MudText Inline="true" Class="align-self-center">Selected1: @selectedItem1?.Medicamento</MudText>
+        <MudText Inline="true" Class="align-self-center">Selected2: @selectedItem2?.Medicamento</MudText>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public List<ReposicaoEstoque> repoList { get; set; }
+
+    private bool dense = true;
+    private bool hover = true;
+    private bool striped = true;
+    private bool bordered = false;
+    private string searchString1 = "";
+    private string searchString2 = "";
+    private ReposicaoEstoque selectedItem1 = null;
+    private ReposicaoEstoque selectedItem2 = null;
+    private HashSet<ReposicaoEstoque> selectedItems = new HashSet<ReposicaoEstoque>();
+
+    private List<ReposicaoEstoque> Elements = new List<ReposicaoEstoque>();
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Elements = repoList;
+    }
+
+    private bool FilterFunc1(ReposicaoEstoque element) => FilterFunc(element, searchString1);
+    private bool FilterFunc2(ReposicaoEstoque element) => FilterFunc(element, searchString2);
+
+    private bool FilterFunc(ReposicaoEstoque element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Medicamento.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;        
+        return false;
+    }
+}

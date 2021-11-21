@@ -1,10 +1,183 @@
 ﻿@page "/"
+@using NPOI.SS.UserModel
+@using NPOI.XSSF.UserModel
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
 
-Welcome to your new app.
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="d-flex align-center justify-center mud-width-full py-4">
+            <h3>Interface Auxiliar de Reposição de Estoque </h3>
+            <hr />
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6">
+        <MudPaper Class="d-flex align-center justify-center mud-width-full py-5">
+            <InputFile id="fileInput" OnChange="GetFile" onloadstart="Progress" hidden single />
 
-<SurveyPrompt Title="How is Blazor working for you?" />
-<MudAlert Severity="Severity.Success">The reactor is running at optimum tempe,rature</MudAlert>
+            <MudButton HtmlTag="label"
+                       onchange="GetFile"
+                       Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Filled.CloudUpload"
+                       for="fileInput">
+                Buscar Arquivo Excel
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6">
+        <MudExpansionPanels Class="py-5">
+            <MudExpansionPanel Text="Filtros" MaxHeight="500" Style="color: blue">
+
+                <MudPaper Class="d-flex align-center justify-center mud-width-full py-5">
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.h6" Color="Color.Primary">Último Movimento</MudText>
+                        <MudDateRangePicker @ref="_picker" Label="With action buttons" @bind-DateRange="_dateRange">
+                            <PickerActions>
+                                <MudButton Class="mr-auto align-self-start" OnClick="@(() => _picker.Clear())">Clear</MudButton>
+                                <MudButton OnClick="@(() => _picker.Close(false))">Cancel</MudButton>
+                                <MudButton Color="Color.Primary" OnClick="@(() => _picker.Close())">Ok</MudButton>
+                            </PickerActions>
+                        </MudDateRangePicker>
+                    </MudItem>
+                </MudPaper>
+                <MudDivider />
+                <MudPaper Class="d-flex align-center justify-center mud-width-full py-5">
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.h6" Color="Color.Primary">Dias de Consumo</MudText>
+                        <MudSlider @bind-Value="value2" Min="-1" Max="1" Step="0.05" Color="Color.Error">Value: @value2.ToString("F2")</MudSlider>
+                        <MudSlider @bind-Value="value1" Min="0" Max="10" Color="Color.Info">Value: @value1.ToString()</MudSlider>
+                    </MudItem>
+                </MudPaper>
+
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+
+    </MudItem>
+    <MudItem>
+
+    </MudItem>
+</MudGrid>
+
+<hr />
+
+
+@*<MudContainer Style="margin-botton: 10px; flex-direction: row;">
+    <MudPaper Elevation="12" Height="200px" Class="pa-8" Width="100%">
+
+
+
+
+
+
+
+    <MudContainer>
+
+
+    </MudContainer>
+    <MudContainer>
+
+    </MudContainer>
+    </MudPaper>
+
+
+    </MudContainer>*@
+@if (progress)
+{
+    <div class="d-flex justify-content-center" style="height: 50vh; align-items: center;">
+        <div class="spinner-border text-info" role="status" style="width: 5rem; height: 5rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+@if (listRepo.Count() > 0)
+{
+    <MudPaper Class="pa-5 mx-auto" Elevation="15">
+        <MudPaper>
+            <ReplacementExcel.Components.TabPage repoList="@listRepo"></ReplacementExcel.Components.TabPage>
+        </MudPaper>
+    </MudPaper>
+}
+
+
+
+
+
+@code {
+    private bool progress = false;
+    private MemoryStream stream2;
+    private ReposicaoEstoque repo;
+    private List<ReposicaoEstoque> listRepo;
+    private int maxProgress;
+    MudDateRangePicker _picker;
+    public double value1 = 0;
+    public double value2 = 5;
+    DateRange _dateRange = new DateRange(DateTime.Now.Date, DateTime.Now.AddDays(5).Date);
+
+    protected override void OnInitialized() => listRepo = new();
+
+    private void Progress()
+    {
+        progress = !progress;
+        StateHasChanged();
+    }
+
+
+    public async Task GetFile(InputFileChangeEventArgs e) //get excel file
+    {
+        Progress();
+
+        //https://docs.microsoft.com/en-us/aspnet/core/blazor/file-uploads?view=aspnetcore-5.0&pivots=webassembly
+        //prepare filestream from uploaded file
+        var stream1 = e.File.OpenReadStream();
+        stream2 = new MemoryStream();
+        await stream1.CopyToAsync(stream2);
+        stream1.Close();
+        //await using FileStream stream = new(path, FileMode.Create);
+        //await e.File.OpenReadStream().CopyToAsync(stream);
+        await ReadExcel();
+    }
+
+    private async Task<List<ReposicaoEstoque>> ReadExcel()
+    {
+        List<string> rowList = new List<string>();
+        ISheet sheet;
+        //using (var stream = new FileStream("Test.xlsx", FileMode.Open))
+        using (stream2)
+        {
+            stream2.Position = 0;
+            NPOI.XSSF.UserModel.XSSFWorkbook xssWorkbook = new XSSFWorkbook(stream2);
+            sheet = xssWorkbook.GetSheetAt(0);
+            IRow headerRow = sheet.GetRow(0);
+            int cellCount = headerRow.LastCellNum;
+
+            for (int i = (sheet.FirstRowNum + 4); i <= sheet.LastRowNum; i++) //+3
+            {
+                repo = new();
+                IRow row = sheet.GetRow(i);
+                if (row == null) continue;
+                if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
+                for (int j = row.FirstCellNum; j < cellCount; j++)
+                {
+                    if (row.GetCell(j) != null)
+                    {
+                        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) && !string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))
+                        {
+                            if (j == 0) repo.Codigo = row.GetCell(j).ToString();
+                            if (j == 1) repo.Medicamento = row.GetCell(j).ToString();
+                            if (j == 2) repo.Unidade = row.GetCell(j).ToString();
+                            if (j == 3) repo.UltimoMovimento = DateTime.Parse(row.GetCell(j).ToString());
+                            if (j == 4) repo.ConsumoTotal = float.Parse(row.GetCell(j).ToString());
+                            if (j == 6) repo.EstoqueAtual = float.Parse(row.GetCell(j).ToString());
+                            if (j == 7) repo.DiasDeEstoque = int.Parse(row.GetCell(j).ToString());
+                        }
+                    }
+                }
+                listRepo.Add(repo);
+            }
+        }
+        Progress();
+        return listRepo;
+    }
+    }

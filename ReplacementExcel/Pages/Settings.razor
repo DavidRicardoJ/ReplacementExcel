@@ -1,0 +1,42 @@
+﻿@page "/settings"
+
+
+
+
+<MudGrid Style="display: flex; align-items:center; justify-content: center;">
+    <MudItem xs="6" md="4">
+        <MudPaper Class="d-flex align-center justify-center mud-width-full py-12" Elevation="0">
+            <div style="width: 100%; margin-top: 100px;">
+                <EditForm Model="@set" OnValidSubmit="OnValidSubmit">
+                    <DataAnnotationsValidator />
+                    <MudCard>
+                        <MudCardContent>
+                            <MudNumericField @bind-Value="set.FirstCollumn" Label="Primeira Coluna a ser Importada" Variant="Variant.Text" Min="0" Max="10" />
+                            <MudNumericField @bind-Value="set.FirstRow" Label="Primeira Linha a ser Importada" Variant="Variant.Text" Min="0" Max="10" />
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Salvar</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </EditForm>
+            </div>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+
+
+
+
+
+@code {
+        private AppSettings set = new();
+        bool success;
+
+
+        private void OnValidSubmit(EditContext context)
+        {
+            success = true;
+            StateHasChanged();
+        }
+    }
